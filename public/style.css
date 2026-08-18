@@ -1,0 +1,182 @@
+:root {
+  --bg: #f7f5f0;
+  --surface: #ffffff;
+  --border: #e4dfd4;
+  --text: #2b2620;
+  --text-muted: #7a7266;
+  --accent: #a8402f;
+  --accent-soft: #f1e2dd;
+  --hanja: #3d6b52;
+  --hanja-soft: #e4efe8;
+  --ai: #4a5a8f;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Apple SD Gothic Neo", "Malgun Gothic", "Pretendard", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.app {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 48px 20px 80px;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+h1 {
+  font-size: 2.2rem;
+  margin: 0 0 8px;
+  letter-spacing: 0.02em;
+  color: var(--accent);
+}
+
+.subtitle {
+  color: var(--text-muted);
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.search-box {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 32px;
+}
+
+#search-input {
+  flex: 1;
+  padding: 14px 16px;
+  font-size: 1.05rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+#search-input:focus {
+  border-color: var(--accent);
+}
+
+.search-box button {
+  padding: 14px 24px;
+  font-size: 1.05rem;
+  border: none;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.search-box button:hover {
+  opacity: 0.9;
+}
+
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.result-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 22px;
+}
+
+.result-card .matched-word {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin: 0 0 4px;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.result-card .matched-word .hanja-char {
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: var(--hanja);
+  opacity: 1;
+}
+
+.result-card .meaning {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin: 0 0 16px;
+  line-height: 1.5;
+}
+
+.word-group-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin: 12px 0 6px;
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.95rem;
+}
+
+.chip.hanja {
+  background: var(--hanja-soft);
+  color: var(--hanja);
+}
+
+.chip.other {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.chip .hanja-char {
+  font-size: 0.8rem;
+  opacity: 0.75;
+}
+
+.chip.ai {
+  background: transparent;
+  border: 1px dashed var(--ai);
+  color: var(--ai);
+}
+
+.word-group-label.ai-label {
+  color: var(--ai);
+}
+
+.empty-state,
+.notice {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 40px 0;
+  font-size: 0.95rem;
+}
+
+.notice.partial-flag {
+  padding: 0 0 8px;
+  text-align: left;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}

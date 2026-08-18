@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KoreLex - 한자어/유의어 사전</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>KoreLex</h1>
+      <p class="subtitle">단어를 입력하면 같은 의미를 가진 한자어나 유의어를 찾아드려요</p>
+    </header>
+
+    <form id="search-form" class="search-box">
+      <input
+        id="search-input"
+        type="text"
+        placeholder="예: 생각, 집, 마음..."
+        autocomplete="off"
+        autofocus
+      />
+      <button type="submit">검색</button>
+    </form>
+
+    <div id="results" class="results"></div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
