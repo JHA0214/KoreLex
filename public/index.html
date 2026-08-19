@@ -5,6 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>KoreLex - 한자어/유의어 사전</title>
   <link rel="stylesheet" href="style.css" />
+
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#a8402f" />
+  <link rel="icon" href="/icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="/icons/icon-180.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="KoreLex" />
 </head>
 <body>
   <div class="app">
@@ -13,18 +21,25 @@
       <p class="subtitle">단어를 입력하면 같은 의미를 가진 한자어나 유의어를 찾아드려요</p>
     </header>
 
-    <div id="auth-widget" class="auth-widget">
-      <div id="auth-locked" class="auth-state hidden">
-        <button id="auth-toggle" class="auth-link" type="button">AI 추천 기능 잠금 해제</button>
-        <form id="auth-form" class="auth-form hidden">
-          <input id="auth-password" type="password" placeholder="비밀번호" autocomplete="off" />
-          <button type="submit">확인</button>
-        </form>
-        <p id="auth-message" class="auth-message"></p>
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <button id="install-button" class="auth-link install-link hidden" type="button">📲 홈 화면에 설치</button>
+        <span id="ios-install-hint" class="ios-hint hidden">Safari 공유 버튼 → "홈 화면에 추가"로 설치할 수 있어요</span>
       </div>
-      <div id="auth-unlocked" class="auth-state hidden">
-        <span class="auth-badge">✓ AI 추천 기능 활성화됨</span>
-        <button id="auth-logout" class="auth-link" type="button">잠금</button>
+
+      <div id="auth-widget" class="auth-widget">
+        <div id="auth-locked" class="auth-state hidden">
+          <button id="auth-toggle" class="auth-link" type="button">AI 추천 기능 잠금 해제</button>
+          <form id="auth-form" class="auth-form hidden">
+            <input id="auth-password" type="password" placeholder="비밀번호" autocomplete="off" />
+            <button type="submit">확인</button>
+          </form>
+          <p id="auth-message" class="auth-message"></p>
+        </div>
+        <div id="auth-unlocked" class="auth-state hidden">
+          <span class="auth-badge">✓ AI 추천 기능 활성화됨</span>
+          <button id="auth-logout" class="auth-link" type="button">잠금</button>
+        </div>
       </div>
     </div>
 

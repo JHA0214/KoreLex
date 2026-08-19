@@ -142,3 +142,41 @@ fetch('/api/auth/status')
   .then((res) => res.json())
   .then((data) => setAuthState(!!data.unlocked))
   .catch(() => setAuthState(false));
+
+// --- 홈 화면에 설치(PWA) ---
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {
+      // 서비스 워커 등록 실패는 앱 사용에 지장이 없으므로 조용히 무시한다.
+    });
+  });
+}
+
+const installButton = document.getElementById('install-button');
+const iosInstallHint = document.getElementById('ios-install-hint');
+let deferredInstallPrompt = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  installButton.classList.remove('hidden');
+});
+
+installButton.addEventListener('click', async () => {
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+  installButton.classList.add('hidden');
+});
+
+window.addEventListener('appinstalled', () => {
+  installButton.classList.add('hidden');
+  iosInstallHint.classList.add('hidden');
+});
+
+const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+if (isIos && !isStandalone) {
+  iosInstallHint.classList.remove('hidden');
+}
