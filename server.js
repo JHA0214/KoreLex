@@ -226,14 +226,25 @@ async function buildCards(targetCodes, searchedWordDisplay) {
 async function fetchAiCandidates(word, meaning) {
   const response = await anthropic.messages.create({
     model: AI_MODEL,
-    max_tokens: 200,
+    max_tokens: 300,
     output_config: {
       format: {
         type: 'json_schema',
         schema: {
           type: 'object',
           properties: {
-            candidates: { type: 'array', items: { type: 'string' } }
+            candidates: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  word: { type: 'string' },
+                  hanja: { anyOf: [{ type: 'string' }, { type: 'null' }] }
+                },
+                required: ['word', 'hanja'],
+                additionalProperties: false
+              }
+            }
           },
           required: ['candidates'],
           additionalProperties: false
@@ -243,7 +254,7 @@ async function fetchAiCandidates(word, meaning) {
     messages: [
       {
         role: 'user',
-        content: `단어: ${word}\n뜻풀이: ${meaning}\n\n이 단어와 의미가 같거나 아주 비슷한 다른 한국어 표준어를 최대 4개까지 제안해줘. 실제로 존재하는 단어만, 이 단어 자체와 똑같은 단어는 제외하고 답해줘.`
+        content: `단어: ${word}\n뜻풀이: ${meaning}\n\n이 단어와 의미가 같거나 아주 비슷한 다른 한국어 표준어를 최대 4개까지 제안해줘. 실제로 존재하는 단어만, 이 단어 자체와 똑같은 단어는 제외하고 답해줘. 각 후보 단어가 한자어라면 정확한 한자 표기를 hanja 필드에 적고(예: 恩惠), 고유어라서 한자가 없다면 hanja를 null로 해줘. 그 단어가 여러 동음이의어를 가질 수 있으니, 지금 의도한 뜻에 해당하는 정확한 한자를 적는 게 중요해.`
       }
     ]
   });
@@ -256,20 +267,32 @@ async function fetchAiCandidates(word, meaning) {
   if (!textBlock) return [];
   try {
     const parsed = JSON.parse(textBlock.text);
-    return (parsed.candidates || []).slice(0, MAX_AI_CANDIDATES);
+    return (parsed.candidates || [])
+      .filter((c) => c && typeof c.word === 'string' && c.word.trim())
+      .slice(0, MAX_AI_CANDIDATES);
   } catch {
     return [];
   }
 }
 
-async function verifyAiCandidate(candidateWord, excludeWords) {
-  const stripped = stripHomographNumber(candidateWord).trim();
+async function verifyAiCandidate(candidate, excludeWords) {
+  const stripped = stripHomographNumber(candidate.word).trim();
   if (!stripped || excludeWords.has(stripped)) return null;
 
   try {
     const items = await callSearch(stripped, 'exact');
-    const match = items.find((item) => stripHomographNumber(item.word) === stripped);
-    if (!match) return null;
+    const matches = items.filter((item) => stripHomographNumber(item.word) === stripped);
+    if (matches.length === 0) return null;
+
+    let match;
+    if (candidate.hanja) {
+      // AI가 특정 한자를 지목했다면, 사전에 그 한자와 정확히 일치하는 동음이의어가
+      // 있을 때만 채택한다. 일치하는 게 없으면 엉뚱한 뜻일 위험이 크므로 버린다.
+      match = matches.find((item) => item.origin === candidate.hanja);
+      if (!match) return null;
+    } else {
+      match = matches.find((item) => !item.origin) || matches[0];
+    }
 
     const detail = await fetchWordDetail(match.target_code);
     if (!detail || excludeWords.has(detail.word)) return null;
