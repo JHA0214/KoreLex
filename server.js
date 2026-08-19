@@ -8,6 +8,7 @@ const Anthropic = require('@anthropic-ai/sdk');
 const { XMLParser } = require('fast-xml-parser');
 
 const app = express();
+app.set('trust proxy', 1); // Render/Railway 등 리버스 프록시 뒤에서 secure 쿠키가 정상 동작하도록
 const PORT = process.env.PORT || 3000;
 const STDICT_API_KEY = process.env.STDICT_API_KEY;
 const SEARCH_URL = 'https://stdict.korean.go.kr/api/search.do';
@@ -374,6 +375,7 @@ app.post('/api/login', (req, res) => {
   res.cookie(AUTH_COOKIE, token, {
     httpOnly: true,
     sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
     maxAge: AUTH_TOKEN_TTL_MS
   });
   res.json({ success: true });
