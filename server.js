@@ -59,13 +59,18 @@ const AI_OUTPUT_PRICE_PER_M = 5.0; // $/1M output tokens
 const DAILY_AI_BUDGET_USD = parseFloat(process.env.DAILY_AI_BUDGET_USD || '1.0');
 const MAX_AI_ENRICH_CARDS = 3; // 한 번의 검색 요청에서 AI로 보완할 최대 카드 수
 const MAX_AI_CANDIDATES = 4; // 카드 하나당 요청할 최대 후보 단어 수
+// AI 호출 한 번의 비용 상한 추정치(max_tokens=300 출력 + 넉넉한 입력 기준).
+// 실제 요청을 보내기 전에 이 금액을 미리 예산에서 "예약"해 두고, 응답을 받은 뒤
+// 실제 비용으로 정산한다. 예약이 동기적으로 이루어지므로 동시 요청이 몰려도
+// 여러 요청이 동시에 예산 확인을 통과하는 경쟁 조건(TOCTOU)이 생기지 않는다.
+const AI_CALL_COST_ESTIMATE_USD = 0.005;
 const USAGE_FILE = path.join(__dirname, '.usage.json');
 
 function todayKey() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function loadUsage() {
+function loadUsageFromDisk() {
   try {
     const data = JSON.parse(fs.readFileSync(USAGE_FILE, 'utf-8'));
     if (data.date === todayKey()) return data;
@@ -75,19 +80,41 @@ function loadUsage() {
   return { date: todayKey(), costUSD: 0 };
 }
 
-function addUsageCost(inputTokens, outputTokens) {
-  const usage = loadUsage();
-  usage.costUSD += (inputTokens / 1e6) * AI_INPUT_PRICE_PER_M + (outputTokens / 1e6) * AI_OUTPUT_PRICE_PER_M;
+// 프로세스 메모리에 하루 사용량을 들고 있는다. 파일은 재시작 시 복구용 백업일 뿐,
+// 예산 판단의 기준(진실의 원천)은 항상 이 메모리 값이다.
+let dailyUsage = loadUsageFromDisk();
+
+function currentUsage() {
+  if (dailyUsage.date !== todayKey()) {
+    dailyUsage = { date: todayKey(), costUSD: 0 };
+  }
+  return dailyUsage;
+}
+
+function persistUsage() {
   try {
-    fs.writeFileSync(USAGE_FILE, JSON.stringify(usage));
+    fs.writeFileSync(USAGE_FILE, JSON.stringify(dailyUsage));
   } catch (err) {
     console.error('AI 사용량 기록 실패:', err.message);
   }
-  return usage.costUSD;
 }
 
-function isDailyBudgetExceeded() {
-  return loadUsage().costUSD >= DAILY_AI_BUDGET_USD;
+// 동기 함수(중간에 await 없음) — Node의 단일 스레드 특성상 이 함수가 실행되는
+// 동안에는 다른 요청의 코드가 끼어들 수 없어, 확인과 차감이 원자적으로 처리된다.
+function tryReserveAiBudget() {
+  const usage = currentUsage();
+  if (usage.costUSD + AI_CALL_COST_ESTIMATE_USD > DAILY_AI_BUDGET_USD) return false;
+  usage.costUSD += AI_CALL_COST_ESTIMATE_USD;
+  persistUsage();
+  return true;
+}
+
+// 예약해 둔 추정 비용을 실제 토큰 사용량 기준으로 정산한다.
+function reconcileAiCost(inputTokens, outputTokens) {
+  const actualCost = (inputTokens / 1e6) * AI_INPUT_PRICE_PER_M + (outputTokens / 1e6) * AI_OUTPUT_PRICE_PER_M;
+  const usage = currentUsage();
+  usage.costUSD += actualCost - AI_CALL_COST_ESTIMATE_USD;
+  persistUsage();
 }
 
 const xmlParser = new XMLParser({
@@ -260,7 +287,7 @@ async function fetchAiCandidates(word, meaning) {
   });
 
   if (response.usage) {
-    addUsageCost(response.usage.input_tokens, response.usage.output_tokens);
+    reconcileAiCost(response.usage.input_tokens, response.usage.output_tokens);
   }
 
   const textBlock = response.content.find((b) => b.type === 'text');
@@ -313,7 +340,12 @@ async function enrichCardWithAi(card) {
   }
   if (candidates.length === 0) return card;
 
-  const excludeWords = new Set([card.matchedWord]);
+  // 사전에 이미 나온 단어(표제어 자신 + 공식 동의어)는 AI 추천에서 중복 표시하지 않는다.
+  const excludeWords = new Set([
+    card.matchedWord,
+    ...card.hanjaWords.map((w) => w.word),
+    ...card.otherWords.map((w) => w.word)
+  ]);
   const verified = await Promise.all(candidates.map((c) => verifyAiCandidate(c, excludeWords)));
 
   const seen = new Set();
@@ -327,15 +359,19 @@ async function enrichCardWithAi(card) {
 }
 
 async function enrichCardsWithAi(cards) {
-  if (!anthropic || isDailyBudgetExceeded()) return cards;
+  if (!anthropic) return cards;
 
-  const needsEnrichIdx = cards
-    .map((card, i) => (card.hanjaWords.length + card.otherWords.length === 0 ? i : -1))
-    .filter((i) => i !== -1)
-    .slice(0, MAX_AI_ENRICH_CARDS);
+  // 사전에 이미 동의어가 있어도(예: "은혜") 거기 실리지 않은 관련어("시혜")가
+  // 있을 수 있으므로, 동의어 유무와 무관하게 앞쪽 카드 몇 개는 항상 AI에게 물어본다.
+  const targetIdx = cards.map((_, i) => i).slice(0, MAX_AI_ENRICH_CARDS);
+
+  // 예산 예약은 동기적으로, 순서대로 처리한다(Array#filter의 콜백은 병렬로 실행되지
+  // 않으므로 여기서 카드별로 예산을 확정지어 두면 이후 비동기 AI 호출들이 동시에
+  // 진행되더라도 예산을 이중으로 소비할 수 없다).
+  const reservedIdx = targetIdx.filter(() => tryReserveAiBudget());
 
   await Promise.all(
-    needsEnrichIdx.map(async (i) => {
+    reservedIdx.map(async (i) => {
       cards[i] = await enrichCardWithAi(cards[i]);
     })
   );
