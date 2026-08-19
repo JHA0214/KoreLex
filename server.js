@@ -16,7 +16,11 @@ const VIEW_URL = 'https://stdict.korean.go.kr/api/view.do';
 // --- AI 기능 잠금 해제(비밀번호) 설정 ---
 // 일반 사용자는 사전 검색만 가능하고, 이 비밀번호를 맞춘 사용자만
 // 브라우저 쿠키에 서버 발급 토큰이 저장되어 AI 보완 검색이 함께 열린다.
-const APP_PASSWORD = process.env.APP_PASSWORD || '007181';
+// 실제 비밀번호 값은 .env(git에 올라가지 않음)에만 두고, 소스코드에는 절대 하드코딩하지 않는다.
+const APP_PASSWORD = process.env.APP_PASSWORD || null;
+if (!APP_PASSWORD) {
+  console.warn('APP_PASSWORD가 설정되지 않아 AI 잠금 해제 기능이 비활성화됩니다.');
+}
 const AUTH_COOKIE = 'korelex_auth';
 const AUTH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7일
 const validTokens = new Map(); // token -> 만료 시각(ms)
@@ -359,6 +363,9 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.post('/api/login', (req, res) => {
+  if (!APP_PASSWORD) {
+    return res.status(503).json({ success: false, error: 'AI 잠금 해제 기능이 서버에 설정되어 있지 않습니다.' });
+  }
   const { password } = req.body || {};
   if (password !== APP_PASSWORD) {
     return res.status(401).json({ success: false, error: '비밀번호가 올바르지 않습니다.' });
