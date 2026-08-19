@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: korelex
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: STDICT_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: APP_PASSWORD
+        sync: false
+      - key: DAILY_AI_BUDGET_USD
+        value: "1.0"

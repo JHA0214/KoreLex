@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "단어를 입력하면 같은 의미를 가진 한자어나 다른 단어를 검색해주는 한국어 사전 웹앱",
   "main": "server.js",
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "start": "node server.js"
   },
