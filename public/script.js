@@ -2,6 +2,14 @@ const form = document.getElementById('search-form');
 const input = document.getElementById('search-input');
 const results = document.getElementById('results');
 
+const authLocked = document.getElementById('auth-locked');
+const authUnlocked = document.getElementById('auth-unlocked');
+const authToggle = document.getElementById('auth-toggle');
+const authForm = document.getElementById('auth-form');
+const authPassword = document.getElementById('auth-password');
+const authMessage = document.getElementById('auth-message');
+const authLogout = document.getElementById('auth-logout');
+
 function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str ?? '';
@@ -85,3 +93,52 @@ form.addEventListener('submit', (e) => {
   const word = input.value.trim();
   if (word) search(word);
 });
+
+function setAuthState(unlocked) {
+  authLocked.classList.toggle('hidden', unlocked);
+  authUnlocked.classList.toggle('hidden', !unlocked);
+  if (!unlocked) {
+    authForm.classList.add('hidden');
+    authMessage.textContent = '';
+    authPassword.value = '';
+  }
+}
+
+authToggle.addEventListener('click', () => {
+  authForm.classList.toggle('hidden');
+  if (!authForm.classList.contains('hidden')) authPassword.focus();
+});
+
+authForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  authMessage.textContent = '';
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: authPassword.value })
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      setAuthState(true);
+    } else {
+      authMessage.textContent = data.error || '비밀번호가 올바르지 않습니다.';
+    }
+  } catch {
+    authMessage.textContent = '서버에 연결할 수 없어요.';
+  }
+});
+
+authLogout.addEventListener('click', async () => {
+  try {
+    await fetch('/api/logout', { method: 'POST' });
+  } catch {
+    // 네트워크 오류여도 화면은 잠금 상태로 되돌린다.
+  }
+  setAuthState(false);
+});
+
+fetch('/api/auth/status')
+  .then((res) => res.json())
+  .then((data) => setAuthState(!!data.unlocked))
+  .catch(() => setAuthState(false));

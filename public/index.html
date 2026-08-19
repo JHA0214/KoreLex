@@ -13,6 +13,21 @@
       <p class="subtitle">단어를 입력하면 같은 의미를 가진 한자어나 유의어를 찾아드려요</p>
     </header>
 
+    <div id="auth-widget" class="auth-widget">
+      <div id="auth-locked" class="auth-state hidden">
+        <button id="auth-toggle" class="auth-link" type="button">AI 추천 기능 잠금 해제</button>
+        <form id="auth-form" class="auth-form hidden">
+          <input id="auth-password" type="password" placeholder="비밀번호" autocomplete="off" />
+          <button type="submit">확인</button>
+        </form>
+        <p id="auth-message" class="auth-message"></p>
+      </div>
+      <div id="auth-unlocked" class="auth-state hidden">
+        <span class="auth-badge">✓ AI 추천 기능 활성화됨</span>
+        <button id="auth-logout" class="auth-link" type="button">잠금</button>
+      </div>
+    </div>
+
     <form id="search-form" class="search-box">
       <input
         id="search-input"

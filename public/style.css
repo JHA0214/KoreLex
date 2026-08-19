@@ -83,6 +83,68 @@ h1 {
   opacity: 0.9;
 }
 
+.auth-widget {
+  text-align: right;
+  margin-bottom: 12px;
+  min-height: 20px;
+}
+
+.auth-state.hidden {
+  display: none;
+}
+
+.auth-link {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0;
+}
+
+.auth-badge {
+  color: var(--hanja);
+  font-weight: 600;
+  margin-right: 10px;
+  font-size: 0.85rem;
+}
+
+.auth-form {
+  display: inline-flex;
+  gap: 6px;
+  margin: 8px 0 0;
+}
+
+.auth-form.hidden {
+  display: none;
+}
+
+.auth-form input {
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.auth-form button {
+  padding: 4px 10px;
+  border: none;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.auth-message {
+  color: var(--accent);
+  font-size: 0.8rem;
+  margin: 4px 0 0;
+}
+
 .results {
   display: flex;
   flex-direction: column;

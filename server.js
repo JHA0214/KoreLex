@@ -2,6 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
+const cookieParser = require('cookie-parser');
 const Anthropic = require('@anthropic-ai/sdk');
 const { XMLParser } = require('fast-xml-parser');
 
@@ -10,6 +12,31 @@ const PORT = process.env.PORT || 3000;
 const STDICT_API_KEY = process.env.STDICT_API_KEY;
 const SEARCH_URL = 'https://stdict.korean.go.kr/api/search.do';
 const VIEW_URL = 'https://stdict.korean.go.kr/api/view.do';
+
+// --- AI 기능 잠금 해제(비밀번호) 설정 ---
+// 일반 사용자는 사전 검색만 가능하고, 이 비밀번호를 맞춘 사용자만
+// 브라우저 쿠키에 서버 발급 토큰이 저장되어 AI 보완 검색이 함께 열린다.
+const APP_PASSWORD = process.env.APP_PASSWORD || '007181';
+const AUTH_COOKIE = 'korelex_auth';
+const AUTH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7일
+const validTokens = new Map(); // token -> 만료 시각(ms)
+
+function issueAuthToken() {
+  const token = crypto.randomBytes(32).toString('hex');
+  validTokens.set(token, Date.now() + AUTH_TOKEN_TTL_MS);
+  return token;
+}
+
+function isAuthTokenValid(token) {
+  if (!token) return false;
+  const expiresAt = validTokens.get(token);
+  if (!expiresAt) return false;
+  if (Date.now() > expiresAt) {
+    validTokens.delete(token);
+    return false;
+  }
+  return true;
+}
 
 const SYNONYM_TYPES = new Set(['동의어', '비슷한말', '유의어']);
 const MAX_HOMOGRAPHS = 15;
@@ -288,7 +315,7 @@ async function enrichCardsWithAi(cards) {
   return cards;
 }
 
-async function search(query) {
+async function search(query, aiUnlocked) {
   const q = query.trim();
   if (!q) return { query: q, exact: [], partial: [] };
 
@@ -300,7 +327,8 @@ async function search(query) {
     .map((item) => item.target_code);
 
   if (exactTargetCodes.length > 0) {
-    const exact = await enrichCardsWithAi(await buildCards(exactTargetCodes, stripped));
+    let exact = await buildCards(exactTargetCodes, stripped);
+    if (aiUnlocked) exact = await enrichCardsWithAi(exact);
     return { query: q, exact, partial: [] };
   }
 
@@ -328,11 +356,38 @@ async function search(query) {
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
+app.use(cookieParser());
+
+app.post('/api/login', (req, res) => {
+  const { password } = req.body || {};
+  if (password !== APP_PASSWORD) {
+    return res.status(401).json({ success: false, error: '비밀번호가 올바르지 않습니다.' });
+  }
+  const token = issueAuthToken();
+  res.cookie(AUTH_COOKIE, token, {
+    httpOnly: true,
+    sameSite: 'lax',
+    maxAge: AUTH_TOKEN_TTL_MS
+  });
+  res.json({ success: true });
+});
+
+app.post('/api/logout', (req, res) => {
+  const token = req.cookies?.[AUTH_COOKIE];
+  if (token) validTokens.delete(token);
+  res.clearCookie(AUTH_COOKIE);
+  res.json({ success: true });
+});
+
+app.get('/api/auth/status', (req, res) => {
+  res.json({ unlocked: isAuthTokenValid(req.cookies?.[AUTH_COOKIE]) });
+});
 
 app.get('/api/search', async (req, res) => {
   const q = req.query.q || '';
+  const aiUnlocked = isAuthTokenValid(req.cookies?.[AUTH_COOKIE]);
   try {
-    const result = await search(q);
+    const result = await search(q, aiUnlocked);
     res.json(result);
   } catch (err) {
     if (err.message === 'MISSING_API_KEY') {
