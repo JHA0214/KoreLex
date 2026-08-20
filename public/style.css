@@ -15,6 +15,10 @@
   box-sizing: border-box;
 }
 
+.hidden {
+  display: none !important;
+}
+
 body {
   margin: 0;
   font-family: "Apple SD Gothic Neo", "Malgun Gothic", "Pretendard", sans-serif;
@@ -99,11 +103,6 @@ h1 {
   min-height: 20px;
 }
 
-.install-link.hidden,
-.ios-hint.hidden {
-  display: none;
-}
-
 .ios-hint {
   font-size: 0.8rem;
   color: var(--text-muted);
@@ -112,10 +111,6 @@ h1 {
 .auth-widget {
   text-align: right;
   min-height: 20px;
-}
-
-.auth-state.hidden {
-  display: none;
 }
 
 .auth-link {
@@ -139,10 +134,6 @@ h1 {
   display: inline-flex;
   gap: 6px;
   margin: 8px 0 0;
-}
-
-.auth-form.hidden {
-  display: none;
 }
 
 .auth-form input {

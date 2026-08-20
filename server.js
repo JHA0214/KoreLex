@@ -48,8 +48,8 @@ const MAX_HOMOGRAPHS = 15;
 const MAX_PARTIAL_WORDS = 8;
 
 // --- AI(Claude) 보완 검색 설정 ---
-// 표준국어대사전에 공식 등록된 동의어가 하나도 없는 뜻풀이에 한해서만
-// Claude에게 관련 단어 후보를 물어보고, 반드시 표준국어대사전으로 재검증한 뒤에만 노출한다.
+// Claude에게 관련 단어 후보를 물어보되, 반드시 표준국어대사전으로 재검증해서
+// 실제로 존재하고 의도한 한자와 일치하는 단어만 노출한다.
 const anthropic = process.env.ANTHROPIC_API_KEY
   ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
   : null;
