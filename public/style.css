@@ -204,6 +204,14 @@ h1 {
   margin: 12px 0 6px;
 }
 
+.example-list {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
 .chip-row {
   display: flex;
   flex-wrap: wrap;

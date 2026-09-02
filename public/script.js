@@ -38,6 +38,11 @@ function renderCard(item) {
     ? `<div class="word-group-label ai-label">AI 추천 (사전으로 검증됨)</div><div class="chip-row">${aiChips}</div>`
     : '';
 
+  const exampleItems = (item.examples || []).map((ex) => `<li>${escapeHtml(ex)}</li>`).join('');
+  const exampleSection = (item.examples || []).length
+    ? `<div class="word-group-label">예문</div><ul class="example-list">${exampleItems}</ul>`
+    : '';
+
   const matchedHanja = item.matchedHanja
     ? `<span class="hanja-char">${escapeHtml(item.matchedHanja)}</span>`
     : '';
@@ -46,6 +51,7 @@ function renderCard(item) {
     <div class="result-card">
       <p class="matched-word">${escapeHtml(item.matchedWord)}${matchedHanja}</p>
       <p class="meaning">${escapeHtml(item.meaning)}</p>
+      ${exampleSection}
       ${hanjaSection}
       ${otherSection}
       ${aiSection}

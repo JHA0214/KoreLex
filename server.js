@@ -46,6 +46,7 @@ function isAuthTokenValid(token) {
 const SYNONYM_TYPES = new Set(['동의어', '비슷한말', '유의어']);
 const MAX_HOMOGRAPHS = 15;
 const MAX_PARTIAL_WORDS = 8;
+const MAX_EXAMPLES_PER_CARD = 3;
 
 // --- AI(Claude) 보완 검색 설정 ---
 // Claude에게 관련 단어 후보를 물어보되, 반드시 표준국어대사전으로 재검증해서
@@ -120,7 +121,8 @@ function reconcileAiCost(inputTokens, outputTokens) {
 const xmlParser = new XMLParser({
   ignoreAttributes: true,
   trimValues: true,
-  isArray: (name) => ['item', 'comm_pattern_info', 'pos_info', 'sense_info', 'lexical_info'].includes(name)
+  isArray: (name) =>
+    ['item', 'comm_pattern_info', 'pos_info', 'sense_info', 'lexical_info', 'example_info'].includes(name)
 });
 
 function stripHomographNumber(word) {
@@ -188,11 +190,16 @@ async function fetchWordDetail(targetCode) {
             return { word: cleanWord(rel.word), targetCode: match ? match[1] : null };
           });
 
+        const examples = (senseInfo.example_info || [])
+          .map((ex) => ex.example)
+          .filter(Boolean);
+
         senses.push({
           pos: posInfo.pos,
           cat: senseInfo.cat_info?.cat || null,
           definition: senseInfo.definition,
-          synonyms
+          synonyms,
+          examples
         });
       }
     }
@@ -242,7 +249,8 @@ async function buildCards(targetCodes, searchedWordDisplay) {
         matchedWord: searchedWordDisplay,
         matchedHanja: detail.hanja,
         hanjaWords,
-        otherWords
+        otherWords,
+        examples: sense.examples.slice(0, MAX_EXAMPLES_PER_CARD)
       });
     }
   }
