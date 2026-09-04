@@ -66,13 +66,28 @@ function render(data) {
   }
 
   if (data.exact.length > 0) {
-    results.innerHTML = data.exact.map(renderCard).join('');
+    const notice = data.derivedBase
+      ? `<p class="notice partial-flag">'${escapeHtml(data.query)}'는 사전에 없어서, 원형으로 보이는 '${escapeHtml(data.derivedBase)}'의 검색 결과를 보여드려요.</p>`
+      : '';
+    results.innerHTML = notice + data.exact.map(renderCard).join('');
     return;
   }
 
   if (data.partial.length > 0) {
     const notice = `<p class="notice partial-flag">'${escapeHtml(data.query)}'와(과) 정확히 일치하는 단어는 없어요. 비슷한 단어를 찾았어요.</p>`;
     results.innerHTML = notice + data.partial.map(renderCard).join('');
+    return;
+  }
+
+  if (data.aiDefinition) {
+    const notice = `<p class="notice partial-flag">'${escapeHtml(data.query)}'는 사전에 없어서, AI가 생성한 뜻풀이예요. 사전으로 검증되지 않았으니 참고만 해 주세요.</p>`;
+    const card = `
+      <div class="result-card">
+        <p class="matched-word">${escapeHtml(data.aiDefinition.word)} <span class="ai-badge">AI 생성 · 미검증</span></p>
+        <p class="meaning">${escapeHtml(data.aiDefinition.meaning)}</p>
+      </div>
+    `;
+    results.innerHTML = notice + card;
     return;
   }
 

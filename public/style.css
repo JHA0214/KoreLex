@@ -252,6 +252,17 @@ h1 {
   color: var(--ai);
 }
 
+.ai-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--ai);
+  border: 1px dashed var(--ai);
+  border-radius: 999px;
+  padding: 2px 8px;
+  vertical-align: middle;
+}
+
 .empty-state,
 .notice {
   text-align: center;
