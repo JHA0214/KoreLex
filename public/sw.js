@@ -1,4 +1,4 @@
-const CACHE_NAME = 'korelex-v1';
+const CACHE_NAME = 'korelex-v2';
 const CORE_ASSETS = ['/', '/index.html', '/style.css', '/script.js', '/manifest.json'];
 
 self.addEventListener('install', (event) => {
